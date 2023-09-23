@@ -1,19 +1,21 @@
 #include <stdio.h>
+#include <unistd.h>
 
 int main() {
     char s[100];
 
-    s[0] = getchar();
+    read(STDIN_FILENO, s, sizeof(char));
     int i = 1;
     do {
-        char c = getchar();
+        char c;
+        read(STDIN_FILENO, &c, sizeof(char));
         if (!(c == ' ' && s[i - 1] == ' ')) {
             s[i++] = c;
         }
     } while (s[i - 1] != 0 && s[i - 1] != '\n');
     s[i] = 0;
 
-    printf("%s\n", s);
+    write(STDOUT_FILENO, s, sizeof(char) * i);
 
     return 0;
 }
