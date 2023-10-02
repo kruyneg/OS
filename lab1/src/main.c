@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
         close(fd2[0]);
         dup2(fd2[1], STDOUT_FILENO);
 
-        execvp("./child1", argv);
+        execvp("./child1", NULL);
     }
     else { // Child2 process
         wait(NULL);
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
         close(fd3[0]);
         dup2(fd3[1], STDOUT_FILENO);
 
-        execvp("./child2", argv);
+        execvp("./child2", NULL);
     }
 
     return 0;
