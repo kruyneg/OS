@@ -12,7 +12,7 @@ int main() {
         if (!(c == ' ' && s[i - 1] == ' ')) {
             s[i++] = c;
         }
-    } while (s[i - 1] != 0 && s[i - 1] != '\n');
+    } while (s[i - 1] != 0 && s[i - 1] != '\n' && s[i - 1] != EOF);
     s[i] = 0;
 
     write(STDOUT_FILENO, s, sizeof(char) * i);

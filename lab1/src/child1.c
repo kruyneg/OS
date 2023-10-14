@@ -10,7 +10,7 @@ int main() {
         char c;
         read(STDIN_FILENO, &c, sizeof(char));
         s[i++] = tolower(c);
-    } while (s[i - 1] != 0 && s[i - 1] != '\n');
+    } while (s[i - 1] != 0 && s[i - 1] != '\n' && s[i - 1] != EOF);
     s[i] = 0;
 
     i = 0;

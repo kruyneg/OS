@@ -10,4 +10,4 @@ add_executable(child2 child2.c)
 
 set(REQUIRED_FILES child1 child2)
 
-add_executable(main main.c)
+add_executable(main1 main.c)
