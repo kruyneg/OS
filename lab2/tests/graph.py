@@ -10,7 +10,7 @@ figure = plot.figure()
 
 ax1 = figure.add_subplot(1,1,1)
 
-N = np.arange(1, 100)
+N = np.arange(1, 10)
 T = np.zeros_like(N)
 
 for i in N:
