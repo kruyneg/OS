@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
     }
 
     sem_t* sem = sem_open(argv[2], 0);
-    if (sem ==SEM_FAILED) {
+    if (sem == SEM_FAILED) {
         perror("Semaphore 1 failed");
         exit(-1);
     }

@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
         exit(-1);
     }
     ftruncate(fd, 1024);
-    size_t file_size = lseek(fd, 0, SEEK_END);
+    size_t file_size = lseek(fd, -1, SEEK_SET);
     char* mapped = mmap(NULL, file_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mapped == MAP_FAILED) {
         perror("map failed!");
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     // creating a semaphore
 
     sem_t* sem = sem_open("/sem_lab3", O_CREAT, 0777, 0);
-    if (sem ==SEM_FAILED) {
+    if (sem == SEM_FAILED) {
         perror("Semaphore failed");
         exit(-1);
     }
