@@ -11,3 +11,4 @@ CTestTestfile.cmake
 _deps
 build/
 .vscode/
+lab3/tests/output.txt
