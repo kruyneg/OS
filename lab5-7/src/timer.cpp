@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
     zmqpp::socket socket(context, zmqpp::socket_type::reply);
 
     try {
-    socket.bind(my_port);
+        socket.bind(my_port);
     }
     catch (zmqpp::exception e) {
         std::cerr << "Exception: " << e.what() << std::endl;
@@ -41,6 +41,9 @@ int main(int argc, char** argv) {
                 response << time;
             else
                 response << time + std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
+        }
+        else if (message == "alive?") {
+            response << "yes";
         }
         else {
             response << "Unknown subcommand";
