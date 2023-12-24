@@ -1,6 +1,5 @@
 #include <vector>
 #include <queue>
-#include <map>
 #include <unordered_map>
 #include <unordered_set>
 #include <sstream>
@@ -126,7 +125,6 @@ pid_t create_job(std::string command) {
         execv(args[0], const_cast<char * const *>(args.data()));
         pid = -2;
         std::cerr << "exec error" << std::endl;
-        // TODO: отправка ошибки
         exit(-2);
     }
 
@@ -140,16 +138,22 @@ void killall_jobs(std::queue<std::pair<int, pid_t>>& q) {
     while(!q.empty()) {
         auto [id, pid] = q.front();
         q.pop();
-        kill(pid, SIGTERM);
+        if (pid != -1)
+            kill(pid, SIGINT);
     }
 }
 
 int main(int argc, char** argv) {
-    // execl("/bin/sh", "sh", "-c", "ls ../src", nullptr);
-    // execl("/bin/sh", "sh", "-c", "/home/kruyneg/Programming/OOP/build/lab_07", nullptr);
+    std::string dagfilename = argv[1];
     // чтение из файла
     boost::property_tree::ptree dag_ptree;
-    boost::property_tree::ini_parser::read_ini("/home/kruyneg/Programming/OS/course_work/src/dag.ini", dag_ptree);
+    try {
+    boost::property_tree::ini_parser::read_ini(dagfilename/* "/home/kruyneg/Programming/OS/course_work/src/dag.ini" */, dag_ptree);
+    }
+    catch (boost::property_tree::ini_parser_error e) {
+        std::cerr << e.message() << std::endl;
+        return 0;
+    }
 
 #ifdef _DEBUG
     for (auto elem : dag_ptree) {
@@ -189,7 +193,7 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    // TODO: мьютексы
+    // Считываем мьютексы каждой джобы
 
     std::unordered_map<std::string, bool> mutex_vals;
     std::unordered_map<int, std::string> mutex_names;
@@ -202,11 +206,11 @@ int main(int argc, char** argv) {
         }
     }
 
-    // mutex
-
+    // начинаем запуск DAG'а
     std::queue<std::pair<int, pid_t>> waitq;
     std::mutex qmtx;
 
+    // этот поток ждёт завершения джоб и ловит их ошибки
     std::thread wait_thread([&](){
         while (!end_points.empty() || !waitq.empty()) {
             if (!waitq.empty()) {
@@ -218,26 +222,26 @@ int main(int argc, char** argv) {
                     pid = waitq.front().second;
                     waitq.pop();
                 }
+                // проверка нужно ли ждать этот процесс, -1 значит, что команда была запущена с помощью system()
                 if (pid != -1) {
                     int sig;
-
+                    // Ловим ошибку с помощью waitpid
                     std::cout << "wait " << pid << std::endl;
                     waitpid(pid, &sig, 0);
                     if (WIFSIGNALED(sig)) {
-                        std::cout << "signal is heared" << std::endl;
-                        // std::lock_guard<std::mutex> lock(qmtx);
-                        // end_points = {};
-                        // killall_jobs(waitq);
+                        // если ошибка найдена, то завершаем все процессы и переходим к завершению программы
+                        std::cout << "signal is heared from " << id + 1 << std::endl;
+                        std::lock_guard<std::mutex> lock(qmtx);
+                        end_points = {};
+                        killall_jobs(waitq);
                     }
                 }
-
-                // std::cout << id << ' ' << pid << std::endl;
-
+                // Разблокируем мьютекс джобы
                 {
                     std::lock_guard<std::mutex> lock(qmtx);
                     mutex_vals[mutex_names[id]] = true;
                 }
-
+                // добавляем в очередь запуска готовые к выполнению джобы
                 for (int i = 0; i < g.size(); ++i) {
                     if (g[i].count(id)) {
                         g[i].erase(id);
@@ -253,28 +257,31 @@ int main(int argc, char** argv) {
     });
 
     while (!end_points.empty()) {
+        // контейнер для запоминания запущенных джобов, чтобы удалить их из start_points
         std::vector<int> erase_id;
         std::lock_guard<std::mutex> lock(qmtx);
         for (int id : start_points) {
             if ((mutex_names.count(id) &&  mutex_vals[mutex_names[id]]) || !mutex_names.count(id)) {
                 std::string command = dag_ptree.get_child(std::to_string(id + 1)).get<std::string>("command");
                 if (command.front() != '.' && command.front() != '/') {
+                    // если команда не является выполнимым файлом, то запускаем её с помощью system()
                     int success = std::system(command.c_str());
-                    if (!success) {
+                    if (success == -1) {
                         killall_jobs(waitq);
                     }
                     erase_id.push_back(id);
                     waitq.push({id, -1});
                 }
                 else {
+                    // иначе делаем fork exec
                     pid_t pid = create_job(command);
 
+                    // блокируем мьютекс джобы
                     if (mutex_names.count(id))
                         mutex_vals[mutex_names[id]] = false;
 
                     erase_id.push_back(id);
-
-                    // std::lock_guard<std::mutex> lock(qmtx);
+                    // добавляем процесс в очередь для ожидания
                     waitq.push({id, pid});
                 }
             }
