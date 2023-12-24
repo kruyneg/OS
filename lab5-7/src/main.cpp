@@ -91,7 +91,6 @@ int main() {
                         socket.set(zmqpp::socket_option::receive_timeout, 1000);
                         socket.set(zmqpp::socket_option::linger, 1000);
                     }
-                    // socket.disconnect(get_port(id));
                 }
                 catch (zmqpp::exception& exc) {
                     std::cout << "Ok:" << id << " 0 " << exc.what() << std::endl;
